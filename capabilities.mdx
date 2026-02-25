@@ -1,0 +1,48 @@
+---
+title: "Capabilities"
+description: "Capabilities determine what your agent can do. Enable them per-project, then optionally filter per-request."
+---
+
+## Available Capabilities
+
+| Capability | Value | Free | Paid | Description |
+|:-----------|:------|:----:|:----:|:------------|
+| Chat | `chat` | Yes | Yes | Conversational AI with memory and context |
+| Research | `research` | — | Yes | Web search, page scraping, and synthesis |
+| Documents | `documents` | — | Yes | Generate PDFs, spreadsheets, presentations |
+| Code | `code` | — | Yes | Write and execute code in a sandbox |
+| Data | `data` | Yes | Yes | Parse, analyze, and transform structured data |
+| Files | `files` | — | Yes | Read and process uploaded files |
+
+<Info>
+  Free-tier projects are limited to **chat** and **data** capabilities. [Upgrade your plan](https://stewrd.dev/pricing) to unlock all capabilities.
+</Info>
+
+## Per-Request Filtering
+
+Pass a `capabilities` array to restrict which capabilities the agent can use for a single request. Omitting the array uses all capabilities enabled on the project.
+
+```typescript
+// Only allow research + documents for this request
+const body = {
+  message: 'Create a market report on EV adoption',
+  capabilities: ['research', 'documents'],
+}
+```
+
+This is useful when you want to:
+- Ensure the agent only uses specific tools for a given task
+- Reduce latency by limiting the tool selection
+- Control costs by restricting expensive capabilities
+
+<Warning>
+  Requested capabilities must be **enabled on your project** first. Requesting a capability that isn't enabled returns a `capability_not_enabled` error.
+</Warning>
+
+## Enabling Capabilities
+
+1. Go to your [dashboard](https://stewrd.dev/dashboard)
+2. Select your project
+3. Toggle capabilities on/off in project settings
+
+Changes take effect immediately for all future requests.

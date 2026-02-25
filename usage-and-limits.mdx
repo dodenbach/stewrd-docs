@@ -1,0 +1,66 @@
+---
+title: "Usage & Limits"
+description: "Plan limits, rate limits, and usage tracking for the Stewrd API."
+---
+
+## Plan Limits
+
+| Plan | Price | Requests/mo | Overage |
+|:-----|:------|:------------|:--------|
+| Free | $0 | 100 | Hard cap — upgrade to continue |
+| Build | $29/mo | 5,000 | $0.005/request |
+| Scale | $99/mo | 50,000 | $0.005/request |
+| Custom | Custom | Unlimited | Volume discounts |
+
+<Card title="Upgrade your plan" icon="arrow-up-right" href="https://stewrd.dev/pricing">
+  View detailed pricing and upgrade from your dashboard.
+</Card>
+
+## Rate Limits
+
+All plans are rate-limited to **60 requests per minute** at the middleware level.
+
+If you exceed this, you'll receive a `rate_limited` error with HTTP status 429. Wait and retry with exponential backoff.
+
+```json
+{
+  "error": {
+    "code": "rate_limited",
+    "message": "Too many requests. Limit: 60/minute."
+  }
+}
+```
+
+## Usage Tracking
+
+Every response includes current usage in the `usage` object:
+
+```json
+{
+  "usage": {
+    "requests_used": 42,
+    "requests_limit": 5000,
+    "tokens_used": 847
+  }
+}
+```
+
+| Field | Description |
+|:------|:------------|
+| `requests_used` | Requests consumed this billing period |
+| `requests_limit` | Your plan's monthly quota |
+| `tokens_used` | Tokens consumed for this specific request |
+
+## Rate Limit Headers
+
+Every response includes rate limit headers:
+
+| Header | Description |
+|:-------|:------------|
+| `X-RateLimit-Limit` | Monthly request limit for your plan |
+| `X-RateLimit-Remaining` | Requests remaining this billing period |
+| `X-RateLimit-Reset` | Unix timestamp when the limit resets |
+
+<Note>
+  **Free tier:** Requests stop at the hard cap (100/mo). Paid plans allow overage at $0.005/request — your app never breaks on traffic spikes.
+</Note>

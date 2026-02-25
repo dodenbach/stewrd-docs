@@ -1,0 +1,75 @@
+---
+title: "Introduction"
+description: "Everything you need to integrate Stewrd into your application. One endpoint, one API key, finished work back."
+---
+
+## What is Stewrd?
+
+Stewrd is a managed API that actually does things. Research, documents, code execution, file processing — your app sends a message, gets finished work back.
+
+No agent frameworks. No infrastructure. No prompt engineering. Just results.
+
+<Card title="Base URL" icon="globe">
+  ```
+  https://api.stewrd.dev
+  ```
+  <span style={{ color: '#22c55e' }}>v1 — Stable</span>
+</Card>
+
+## How it works
+
+<Steps>
+  <Step title="Send a message">
+    POST a message to `/v1/agent` with your API key. Optionally specify which capabilities to use.
+  </Step>
+  <Step title="Agent does the work">
+    Stewrd routes your request through the right tools — research, code execution, document generation, and more.
+  </Step>
+  <Step title="Get finished work back">
+    Receive a JSON response with the agent's message, any generated files, and usage info.
+  </Step>
+</Steps>
+
+## Quick example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.stewrd.dev/v1/agent \
+  -H "Authorization: Bearer sk-stw_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is the capital of France?"}'
+```
+
+```typescript TypeScript
+const response = await fetch('https://api.stewrd.dev/v1/agent', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${STEWRD_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    message: 'What is the capital of France?'
+  }),
+})
+
+const data = await response.json()
+// { message: "The capital of France is Paris.", ... }
+```
+</CodeGroup>
+
+## What's next?
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get your first response in under two minutes
+  </Card>
+  <Card title="Authentication" icon="key" href="/authentication">
+    Learn about API keys and auth headers
+  </Card>
+  <Card title="Capabilities" icon="bolt" href="/capabilities">
+    See what the agent can do
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/agent">
+    Interactive API playground
+  </Card>
+</CardGroup>

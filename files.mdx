@@ -1,0 +1,60 @@
+---
+title: "Files"
+description: "Send files with your request and receive generated files in the response."
+---
+
+## Sending Files
+
+Include files in the `files` array. Each file needs a `name` and `content` (string).
+
+```typescript
+const result = await fetch('https://api.stewrd.dev/v1/agent', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer sk-stw_your_key',
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    message: 'Clean this CSV and fix the date formats',
+    files: [{
+      name: 'raw-data.csv',
+      content: 'id,name,date\n1,Alice,2024-01-15...',
+    }],
+  }),
+})
+```
+
+### File Object
+
+| Field | Type | Required | Description |
+|:------|:-----|:--------:|:------------|
+| `name` | string | Yes | File name with extension (e.g., `data.csv`) |
+| `content` | string | Yes | File contents as a string |
+
+## Receiving Files
+
+Generated files appear in the response `files` array with `name`, `content`, and an optional `url` for downloadable assets.
+
+```json
+{
+  "files": [
+    {
+      "name": "cleaned-data.csv",
+      "content": "id,name,date\n1,Alice,2024-01-15...",
+      "url": "https://files.stewrd.dev/abc123/cleaned-data.csv"
+    }
+  ]
+}
+```
+
+### Response File Object
+
+| Field | Type | Description |
+|:------|:-----|:------------|
+| `name` | string | File name |
+| `content` | string | File contents as a string |
+| `url` | string? | Download URL (when available) |
+
+<Info>
+  File URLs are temporary and expire after 24 hours. Download or store files you need to keep.
+</Info>

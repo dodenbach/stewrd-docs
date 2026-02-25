@@ -1,0 +1,82 @@
+---
+title: "SDKs"
+description: "Official SDKs for the Stewrd API. Coming soon — use raw fetch calls for now."
+---
+
+<Note>
+  Official TypeScript and Python SDKs are in development. For now, use raw `fetch` calls as shown throughout this documentation.
+</Note>
+
+## SDK Preview
+
+Here's a preview of what the TypeScript SDK will look like:
+
+```typescript
+import { Stewrd } from '@stewrd/sdk'
+
+const stewrd = new Stewrd('sk-stw_your_key')
+
+const result = await stewrd.agent.run({
+  message: 'Research the top 5 CRM tools and create a comparison spreadsheet',
+  capabilities: ['research', 'documents'],
+})
+
+console.log(result.message)
+console.log(result.files[0].url)
+```
+
+## Planned SDKs
+
+| Language | Package | Status |
+|:---------|:--------|:-------|
+| TypeScript / Node.js | `@stewrd/sdk` | In development |
+| Python | `stewrd` | Planned |
+
+## Using Fetch in the Meantime
+
+The Stewrd API is a single REST endpoint, so it's straightforward to use with `fetch` in any language:
+
+<CodeGroup>
+```typescript TypeScript
+const response = await fetch('https://api.stewrd.dev/v1/agent', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.STEWRD_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    message: 'Your task here',
+  }),
+})
+
+const data = await response.json()
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://api.stewrd.dev/v1/agent',
+    headers={
+        'Authorization': f'Bearer {STEWRD_API_KEY}',
+        'Content-Type': 'application/json',
+    },
+    json={
+        'message': 'Your task here',
+    },
+)
+
+data = response.json()
+```
+
+```bash cURL
+curl -X POST https://api.stewrd.dev/v1/agent \
+  -H "Authorization: Bearer sk-stw_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Your task here"}'
+```
+</CodeGroup>
+
+<Card title="Get notified" icon="bell" href="https://stewrd.dev/dashboard">
+  Sign up to be notified when official SDKs are released.
+</Card>

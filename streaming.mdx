@@ -1,0 +1,133 @@
+---
+title: "Streaming"
+description: "Get real-time responses from the agent using Server-Sent Events (SSE)."
+---
+
+## Overview
+
+Set `stream: true` in your request to receive a real-time Server-Sent Events stream instead of waiting for the complete JSON response. This is useful for showing progress to users as the agent works.
+
+## Enabling Streaming
+
+Add `stream: true` to your request body:
+
+```typescript
+const response = await fetch('https://api.stewrd.dev/v1/agent', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer sk-stw_your_key',
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    message: 'Write a detailed analysis of renewable energy trends',
+    stream: true,
+  }),
+})
+```
+
+The response will have `Content-Type: text/event-stream`.
+
+## Event Types
+
+The stream emits the following event types:
+
+| Event | Description |
+|:------|:------------|
+| `token` | A chunk of the agent's response text |
+| `tool_start` | The agent is starting to use a capability (e.g., research, code) |
+| `tool_end` | The agent finished using a capability |
+| `done` | The stream is complete — includes final response data |
+| `error` | An error occurred during processing |
+
+## Event Format
+
+Each event follows the [SSE spec](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events):
+
+```
+event: token
+data: {"content": "The renewable"}
+
+event: token
+data: {"content": " energy sector"}
+
+event: tool_start
+data: {"tool": "research", "message": "Searching for latest data..."}
+
+event: tool_end
+data: {"tool": "research"}
+
+event: token
+data: {"content": "According to recent findings..."}
+
+event: done
+data: {"message": "The renewable energy sector...", "files": [], "usage": {"requests_used": 5, "requests_limit": 5000, "tokens_used": 847}, "duration_ms": 4200}
+```
+
+## Consuming the Stream
+
+<CodeGroup>
+```typescript TypeScript
+const response = await fetch('https://api.stewrd.dev/v1/agent', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer sk-stw_your_key',
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    message: 'Explain quantum computing',
+    stream: true,
+  }),
+})
+
+const reader = response.body!.getReader()
+const decoder = new TextDecoder()
+
+while (true) {
+  const { done, value } = await reader.read()
+  if (done) break
+
+  const chunk = decoder.decode(value)
+  const lines = chunk.split('\n')
+
+  for (const line of lines) {
+    if (line.startsWith('event: ')) {
+      const event = line.slice(7)
+      // Handle event type
+    }
+    if (line.startsWith('data: ')) {
+      const data = JSON.parse(line.slice(6))
+
+      if (data.content) {
+        process.stdout.write(data.content)
+      }
+    }
+  }
+}
+```
+
+```javascript Node.js (EventSource)
+import EventSource from 'eventsource'
+
+// Note: EventSource only supports GET by default.
+// For POST requests, use the fetch-based approach above
+// or a library like eventsource-parser.
+```
+</CodeGroup>
+
+## Response Headers
+
+Streaming responses include these headers:
+
+| Header | Description |
+|:-------|:------------|
+| `Content-Type` | `text/event-stream` |
+| `Cache-Control` | `no-cache` |
+| `Connection` | `keep-alive` |
+| `X-Request-Id` | Unique request identifier |
+| `X-RateLimit-Limit` | Monthly request limit |
+| `X-RateLimit-Remaining` | Requests remaining |
+| `X-RateLimit-Reset` | Unix timestamp for limit reset |
+
+<Info>
+  Usage is tracked the same way for streaming and non-streaming requests. Each request counts as one against your quota regardless of stream duration.
+</Info>

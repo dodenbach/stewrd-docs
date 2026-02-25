@@ -1,0 +1,416 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Stewrd API",
+    "description": "A managed API that actually does things. Send a message, get finished work back.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Stewrd Support",
+      "email": "team@stewrd.dev",
+      "url": "https://stewrd.dev"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.stewrd.dev",
+      "description": "Production"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/agent": {
+      "post": {
+        "operationId": "runAgent",
+        "summary": "Run the agent",
+        "description": "Send a message with optional capabilities and files. Returns the agent's completed work as a JSON response, or as a Server-Sent Events stream when `stream: true`.",
+        "tags": ["Agent"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              },
+              "examples": {
+                "simple": {
+                  "summary": "Simple question",
+                  "value": {
+                    "message": "What is the capital of France?"
+                  }
+                },
+                "with-capabilities": {
+                  "summary": "Research with documents",
+                  "value": {
+                    "message": "Research the top 5 CRM tools and create a comparison spreadsheet",
+                    "capabilities": ["research", "documents"]
+                  }
+                },
+                "with-files": {
+                  "summary": "Process a file",
+                  "value": {
+                    "message": "Clean this CSV and fix the date formats",
+                    "files": [
+                      {
+                        "name": "raw-data.csv",
+                        "content": "id,name,date\n1,Alice,2024-01-15"
+                      }
+                    ]
+                  }
+                },
+                "streaming": {
+                  "summary": "Streaming response",
+                  "value": {
+                    "message": "Write a detailed analysis of renewable energy trends",
+                    "stream": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful agent response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Server-Sent Events stream. Events: `token`, `tool_start`, `tool_end`, `done`, `error`."
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": { "type": "string" },
+                "description": "Unique request identifier"
+              },
+              "X-RateLimit-Limit": {
+                "schema": { "type": "integer" },
+                "description": "Monthly request limit for your plan"
+              },
+              "X-RateLimit-Remaining": {
+                "schema": { "type": "integer" },
+                "description": "Requests remaining this billing period"
+              },
+              "X-RateLimit-Reset": {
+                "schema": { "type": "integer" },
+                "description": "Unix timestamp when the limit resets"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — invalid body, missing message, or invalid capabilities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "missing_message": {
+                    "value": {
+                      "error": {
+                        "code": "missing_message",
+                        "message": "A \"message\" field is required."
+                      }
+                    }
+                  },
+                  "invalid_capabilities": {
+                    "value": {
+                      "error": {
+                        "code": "invalid_capabilities",
+                        "message": "Unknown capabilities: unknown. Valid: chat, research, documents, code, data, files"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "invalid_api_key",
+                    "message": "Invalid or missing API key. Include your key as: Authorization: Bearer sk-stw_..."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — capability not enabled or plan restricted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "capability_not_enabled": {
+                    "value": {
+                      "error": {
+                        "code": "capability_not_enabled",
+                        "message": "Capabilities not enabled on this project: research. Enable them in your dashboard."
+                      }
+                    }
+                  },
+                  "plan_restricted": {
+                    "value": {
+                      "error": {
+                        "code": "plan_restricted",
+                        "message": "Capabilities [research] require the Build plan or higher."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests — rate limited or quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "rate_limited": {
+                    "value": {
+                      "error": {
+                        "code": "rate_limited",
+                        "message": "Too many requests. Limit: 60/minute."
+                      }
+                    }
+                  },
+                  "quota_exceeded": {
+                    "value": {
+                      "error": {
+                        "code": "quota_exceeded",
+                        "message": "Monthly request limit reached (100). Upgrade your plan at https://stewrd.dev/pricing"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad gateway — compute service error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "compute_error",
+                    "message": "Compute service returned an error."
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable — compute service not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "service_unavailable",
+                    "message": "Compute service is not configured."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key in the format `sk-stw_...`. Get yours at [stewrd.dev/dashboard](https://stewrd.dev/dashboard)."
+      }
+    },
+    "schemas": {
+      "AgentRequest": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The task or question for the agent.",
+            "example": "What is the capital of France?"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["chat", "research", "documents", "code", "data", "files"]
+            },
+            "description": "Filter which capabilities to use for this request. Omit to use all capabilities enabled on the project."
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InputFile"
+            },
+            "description": "Files to include with the request."
+          },
+          "stream": {
+            "type": "boolean",
+            "default": false,
+            "description": "Set to `true` to receive a Server-Sent Events stream instead of a JSON response."
+          }
+        }
+      },
+      "InputFile": {
+        "type": "object",
+        "required": ["name", "content"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "File name with extension.",
+            "example": "data.csv"
+          },
+          "content": {
+            "type": "string",
+            "description": "File contents as a string.",
+            "example": "id,name,date\n1,Alice,2024-01-15"
+          }
+        }
+      },
+      "AgentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique request identifier."
+          },
+          "object": {
+            "type": "string",
+            "enum": ["agent.response"],
+            "description": "Object type, always `agent.response`."
+          },
+          "message": {
+            "type": "string",
+            "description": "The agent's response message."
+          },
+          "capabilities_used": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Capabilities that were used for this request."
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResponseFile"
+            },
+            "description": "Files generated by the agent."
+          },
+          "usage": {
+            "$ref": "#/components/schemas/Usage"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        }
+      },
+      "ResponseFile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "File name."
+          },
+          "content": {
+            "type": "string",
+            "description": "File contents as a string."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Download URL for the generated file (when available)."
+          }
+        }
+      },
+      "Usage": {
+        "type": "object",
+        "properties": {
+          "requests_used": {
+            "type": "integer",
+            "description": "Requests consumed this billing period."
+          },
+          "requests_limit": {
+            "type": "integer",
+            "description": "Your plan's monthly request quota."
+          },
+          "tokens_used": {
+            "type": "integer",
+            "description": "Tokens consumed for this request."
+          }
+        }
+      },
+      "Meta": {
+        "type": "object",
+        "properties": {
+          "duration_ms": {
+            "type": "integer",
+            "description": "Request processing time in milliseconds."
+          },
+          "project_id": {
+            "type": "string",
+            "description": "The project this request was made against."
+          },
+          "plan": {
+            "type": "string",
+            "description": "Your current plan."
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Machine-readable error code."
+              },
+              "message": {
+                "type": "string",
+                "description": "Human-readable error description."
+              },
+              "docs": {
+                "type": "string",
+                "format": "uri",
+                "description": "Link to relevant documentation."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

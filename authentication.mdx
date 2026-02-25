@@ -1,0 +1,60 @@
+---
+title: "Authentication"
+description: "Every request must include your API key in the Authorization header."
+---
+
+## API Key Format
+
+Your API key is a string that starts with `sk-stw_`, followed by a unique identifier.
+
+```
+sk-stw_a1b2c3d4e5f6...
+```
+
+## Authorization Header
+
+Include your key in the `Authorization` header as a Bearer token:
+
+```
+Authorization: Bearer sk-stw_your_key
+```
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.stewrd.dev/v1/agent \
+  -H "Authorization: Bearer sk-stw_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello"}'
+```
+
+```typescript TypeScript
+const response = await fetch('https://api.stewrd.dev/v1/agent', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.STEWRD_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({ message: 'Hello' }),
+})
+```
+</CodeGroup>
+
+## Key Details
+
+<AccordionGroup>
+  <Accordion title="Scope">
+    Keys are scoped per-project. Each project in your [dashboard](https://stewrd.dev/dashboard) has its own API key. This lets you track usage and manage capabilities independently for each integration.
+  </Accordion>
+  <Accordion title="Regeneration">
+    Regenerating a key **revokes the previous one instantly**. Update your environment variables before regenerating to avoid downtime.
+  </Accordion>
+  <Accordion title="Security">
+    - Never expose your API key in client-side code or public repositories
+    - Use environment variables to store your key
+    - Rotate keys periodically for best practices
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  If your key is compromised, regenerate it immediately from your [dashboard](https://stewrd.dev/dashboard). The old key stops working instantly.
+</Warning>

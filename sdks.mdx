@@ -1,15 +1,17 @@
 ---
 title: "SDKs"
-description: "Official SDKs for the Stewrd API. Coming soon — use raw fetch calls for now."
+description: "Official SDKs for the Stewrd API."
 ---
 
-<Note>
-  Official TypeScript and Python SDKs are in development. For now, use raw `fetch` calls as shown throughout this documentation.
-</Note>
+## TypeScript / Node.js
 
-## SDK Preview
+Install the official TypeScript SDK:
 
-Here's a preview of what the TypeScript SDK will look like:
+```bash
+npm install @stewrd/sdk
+```
+
+### Quick Start
 
 ```typescript
 import { Stewrd } from '@stewrd/sdk'
@@ -25,14 +27,52 @@ console.log(result.message)
 console.log(result.files[0].url)
 ```
 
-## Planned SDKs
+### Streaming
+
+```typescript
+const stream = await stewrd.agent.stream({
+  message: 'Write a detailed analysis',
+})
+
+for await (const event of stream) {
+  if (event.type === 'token') process.stdout.write(event.content)
+  if (event.type === 'tool_start') console.log(`Using ${event.tool}...`)
+  if (event.type === 'done') console.log('\n\nTokens:', event.usage.total_tokens)
+}
+```
+
+### Error Handling
+
+```typescript
+import { Stewrd, StewrdError } from '@stewrd/sdk'
+
+try {
+  await stewrd.agent.run({ message: '...' })
+} catch (err) {
+  if (err instanceof StewrdError) {
+    console.log(err.status)  // 401
+    console.log(err.code)    // 'invalid_api_key'
+    console.log(err.message) // 'Invalid API key'
+  }
+}
+```
+
+<Card title="View on GitHub" icon="github" href="https://github.com/dodenbach/stewrd-sdk">
+  Source code, issues, and full API reference.
+</Card>
+
+<Card title="View on npm" icon="npm" href="https://www.npmjs.com/package/@stewrd/sdk">
+  @stewrd/sdk on npm
+</Card>
+
+## Available SDKs
 
 | Language | Package | Status |
 |:---------|:--------|:-------|
-| TypeScript / Node.js | `@stewrd/sdk` | In development |
+| TypeScript / Node.js | [`@stewrd/sdk`](https://www.npmjs.com/package/@stewrd/sdk) | Available |
 | Python | `stewrd` | Planned |
 
-## Using Fetch in the Meantime
+## Using Fetch Directly
 
 The Stewrd API is a single REST endpoint, so it's straightforward to use with `fetch` in any language:
 
@@ -76,7 +116,3 @@ curl -X POST https://api.stewrd.dev/v1/agent \
   -d '{"message": "Your task here"}'
 ```
 </CodeGroup>
-
-<Card title="Get notified" icon="bell" href="https://stewrd.dev/dashboard">
-  Sign up to be notified when official SDKs are released.
-</Card>

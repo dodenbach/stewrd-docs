@@ -7,10 +7,14 @@
     "dark": "/logo/dark.svg"
   },
   "favicon": "/favicon.svg",
+  "appearance": "dark",
   "colors": {
-    "primary": "#22c55e",
-    "light": "#4ade80",
-    "dark": "#16a34a"
+    "primary": "#6366f1",
+    "light": "#818cf8",
+    "dark": "#4f46e5",
+    "background": {
+      "dark": "#09090b"
+    }
   },
   "topbarLinks": [
     {

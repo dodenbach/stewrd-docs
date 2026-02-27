@@ -36,8 +36,8 @@ All errors return a consistent JSON shape:
 | `quota_exceeded` | 429 | Monthly request quota exceeded | Upgrade your plan or wait for the next billing cycle |
 | `rate_limited` | 429 | Too many requests (60/min limit) | Back off and retry after a short delay |
 | `compute_error` | 502 | The compute service returned an error | Retry the request; if persistent, contact support |
-| `compute_unavailable` | 502 | Failed to reach the compute service | Retry the request; check [status.stewrd.dev](https://status.stewrd.dev) |
-| `service_unavailable` | 503 | Compute service is not configured | Check [status.stewrd.dev](https://status.stewrd.dev) for outages |
+| `compute_unavailable` | 502 | Failed to reach the compute service | Retry the request; check [status.openstatus.dev](https://status.openstatus.dev) |
+| `service_unavailable` | 503 | Compute service is not configured | Check [status.openstatus.dev](https://status.openstatus.dev) for outages |
 
 ## Handling Errors
 

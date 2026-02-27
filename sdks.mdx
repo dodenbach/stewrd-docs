@@ -65,12 +65,69 @@ try {
   @stewrd/sdk on npm
 </Card>
 
+## Python
+
+Install the official Python SDK:
+
+```bash
+pip install stewrd
+```
+
+### Quick Start
+
+```python
+from stewrd import Stewrd
+
+stewrd = Stewrd("sk-stw_your_key")
+
+result = stewrd.agent.run(
+    message="Research the top 5 CRM tools and create a comparison spreadsheet",
+    capabilities=["research", "documents"],
+)
+
+print(result.message)
+print(result.files[0].url)
+```
+
+### Streaming
+
+```python
+for event in stewrd.agent.stream(message="Write a detailed analysis"):
+    if event.type == "token":
+        print(event.content, end="")
+    if event.type == "tool_start":
+        print(f"Using {event.tool}...")
+    if event.type == "done":
+        print(f"\n\nTokens: {event.usage.tokens_used}")
+```
+
+### Error Handling
+
+```python
+from stewrd import Stewrd, StewrdError
+
+try:
+    stewrd.agent.run(message="...")
+except StewrdError as e:
+    print(e.status)   # 401
+    print(e.code)     # "invalid_api_key"
+    print(e.message)  # "Invalid API key"
+```
+
+<Card title="View on GitHub" icon="github" href="https://github.com/dodenbach/stewrd-python">
+  Source code, issues, and full API reference.
+</Card>
+
+<Card title="View on PyPI" icon="python" href="https://pypi.org/project/stewrd/">
+  stewrd on PyPI
+</Card>
+
 ## Available SDKs
 
 | Language | Package | Status |
 |:---------|:--------|:-------|
 | TypeScript / Node.js | [`@stewrd/sdk`](https://www.npmjs.com/package/@stewrd/sdk) | Available |
-| Python | `stewrd` | Planned |
+| Python | [`stewrd`](https://pypi.org/project/stewrd/) | Available |
 
 ## Using Fetch Directly
 

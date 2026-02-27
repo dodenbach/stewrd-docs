@@ -48,6 +48,8 @@
               "capabilities",
               "files",
               "streaming",
+              "sessions",
+              "webhooks",
               "usage-and-limits",
               "errors",
               "sdks"
@@ -65,7 +67,9 @@
       {
         "tab": "API Reference",
         "pages": [
-          "api-reference/agent"
+          "api-reference/agent",
+          "api-reference/sessions",
+          "api-reference/session-messages"
         ]
       }
     ]

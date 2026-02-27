@@ -1,0 +1,151 @@
+---
+title: "Sessions"
+description: "Persistent multi-turn conversations with context that carries across messages."
+---
+
+## Overview
+
+Sessions let your agent remember prior conversation context. Instead of each request being independent, messages within a session build on each other — the agent sees the full conversation history and can reference earlier messages.
+
+Sessions are available on the **Scale plan** and above.
+
+## How It Works
+
+1. **Create a session** — returns a session ID
+2. **Send messages** to the session — each message includes full conversation history automatically
+3. **Session expires** after 30 minutes of inactivity, or you can let it expire naturally
+
+The agent sees prior messages as conversation context, enabling multi-turn workflows like iterative document editing, follow-up questions, and progressive refinement.
+
+## Create a Session
+
+<CodeGroup>
+```bash curl
+curl -X POST https://api.stewrd.dev/v1/sessions \
+  -H "Authorization: Bearer sk-stw_your_key"
+```
+
+```typescript TypeScript
+const session = await fetch('https://api.stewrd.dev/v1/sessions', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer sk-stw_your_key',
+  },
+})
+
+const { id } = await session.json()
+// id: "550e8400-e29b-41d4-a716-446655440000"
+```
+</CodeGroup>
+
+**Response:**
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "object": "session",
+  "status": "active"
+}
+```
+
+## Send Messages
+
+Send messages to the session endpoint. The agent automatically receives the full conversation history.
+
+<CodeGroup>
+```bash curl
+curl -X POST https://api.stewrd.dev/v1/sessions/SESSION_ID/messages \
+  -H "Authorization: Bearer sk-stw_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Research the top 5 project management tools"}'
+```
+
+```typescript TypeScript
+const response = await fetch(
+  `https://api.stewrd.dev/v1/sessions/${sessionId}/messages`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer sk-stw_your_key',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: 'Research the top 5 project management tools',
+      capabilities: ['research'],
+    }),
+  }
+)
+
+const result = await response.json()
+```
+</CodeGroup>
+
+The response has the same shape as the agent endpoint, with an additional `session_id` field:
+
+```json
+{
+  "id": "request-uuid",
+  "object": "session.message",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "message": "Here are the top 5 project management tools...",
+  "capabilities_used": ["research"],
+  "files": [],
+  "usage": { "requests_used": 12, "requests_limit": 50000, "tokens_used": 1847 },
+  "meta": { "duration_ms": 8200, "project_id": "proj-id", "plan": "scale" }
+}
+```
+
+Now send a follow-up — the agent remembers the prior context:
+
+```bash
+curl -X POST https://api.stewrd.dev/v1/sessions/SESSION_ID/messages \
+  -H "Authorization: Bearer sk-stw_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Create a comparison table of those tools as a CSV"}'
+```
+
+The agent references the research from the first message without you needing to repeat it.
+
+## Session Lifecycle
+
+| Property | Value |
+|:---------|:------|
+| Idle timeout | 30 minutes of inactivity |
+| Max active sessions | 10 per project |
+| Max history | 50 messages per session |
+| Plan requirement | Scale or Custom |
+
+- Sessions auto-expire after 30 minutes with no messages
+- Expired sessions return `410 Gone`
+- Each message resets the idle timer
+- Creating a new session when at the limit returns `429`
+
+## Request Format
+
+Session messages accept the same body as the agent endpoint:
+
+| Field | Type | Description |
+|:------|:-----|:------------|
+| `message` | string | **Required.** The message to send. |
+| `capabilities` | string[] | Filter capabilities for this request. |
+| `files` | object[] | Files to include (same format as agent). |
+| `stream` | boolean | Enable SSE streaming (default: `false`). |
+
+<Info>
+  Streaming works the same way in sessions as in the agent endpoint. Set `stream: true` to receive Server-Sent Events.
+</Info>
+
+## Plan Requirements
+
+Sessions are only available on the **Scale plan** ($99/month) and above. Attempting to create a session with a Free or Build plan API key returns:
+
+```json
+{
+  "error": {
+    "code": "plan_restricted",
+    "message": "Persistent sessions require the Scale plan or higher."
+  }
+}
+```
+
+Upgrade at [stewrd.dev/pricing](https://stewrd.dev/pricing).

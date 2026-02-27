@@ -22,6 +22,171 @@
     }
   ],
   "paths": {
+    "/v1/sessions": {
+      "post": {
+        "operationId": "createSession",
+        "summary": "Create a session",
+        "description": "Create a persistent conversation session for multi-turn interactions. Requires Scale plan or above.",
+        "tags": ["Sessions"],
+        "responses": {
+          "201": {
+            "description": "Session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — plan does not support sessions",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": {
+                  "error": {
+                    "code": "plan_restricted",
+                    "message": "Persistent sessions require the Scale plan or higher."
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many active sessions",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": {
+                  "error": {
+                    "code": "session_limit_reached",
+                    "message": "Maximum 10 active sessions per project."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessions/{session_id}/messages": {
+      "post": {
+        "operationId": "sendSessionMessage",
+        "summary": "Send a session message",
+        "description": "Send a message within a persistent session. The agent receives the full conversation history automatically.",
+        "tags": ["Sessions"],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "The session ID returned from Create Session."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AgentRequest" },
+              "examples": {
+                "simple": {
+                  "summary": "Send a message",
+                  "value": {
+                    "message": "Research the top 5 project management tools"
+                  }
+                },
+                "follow-up": {
+                  "summary": "Follow-up message",
+                  "value": {
+                    "message": "Create a comparison table of those tools as a CSV"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful session message response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SessionMessageResponse" }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Server-Sent Events stream. Same events as the agent endpoint."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "410": {
+            "description": "Session expired",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": {
+                  "error": {
+                    "code": "session_expired",
+                    "message": "Session expired due to inactivity."
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "502": {
+            "description": "Compute service error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agent": {
       "post": {
         "operationId": "runAgent",
@@ -385,6 +550,66 @@
           "plan": {
             "type": "string",
             "description": "Your current plan."
+          }
+        }
+      },
+      "SessionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique session identifier."
+          },
+          "object": {
+            "type": "string",
+            "enum": ["session"],
+            "description": "Object type, always `session`."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active"],
+            "description": "Session status."
+          }
+        }
+      },
+      "SessionMessageResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique request identifier."
+          },
+          "object": {
+            "type": "string",
+            "enum": ["session.message"],
+            "description": "Object type, always `session.message`."
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The session this message belongs to."
+          },
+          "message": {
+            "type": "string",
+            "description": "The agent's response message."
+          },
+          "capabilities_used": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Capabilities used for this request."
+          },
+          "files": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ResponseFile" },
+            "description": "Files generated by the agent."
+          },
+          "usage": {
+            "$ref": "#/components/schemas/Usage"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
           }
         }
       },

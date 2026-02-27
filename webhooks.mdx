@@ -1,0 +1,185 @@
+---
+title: "Webhooks"
+description: "Get notified when agent tasks complete with HMAC-signed webhook deliveries."
+---
+
+## Overview
+
+Webhooks notify your server when agent tasks complete. Instead of polling for results, configure a URL and Stewrd will POST the response to your endpoint — signed with HMAC-SHA256 so you can verify authenticity.
+
+Webhooks are available on the **Build plan** and above.
+
+## Setup
+
+Configure webhooks in your [project dashboard](https://stewrd.dev/dashboard):
+
+1. Open your project settings
+2. In the **Webhooks** section, enter your endpoint URL (must be HTTPS)
+3. Save — your signing secret is displayed once, copy it immediately
+4. Use the **Send Test** button to verify delivery
+
+## Payload Format
+
+When an agent task completes, Stewrd sends a POST request to your webhook URL:
+
+```json
+{
+  "event": "agent.completed",
+  "id": "request-uuid",
+  "object": "agent.response",
+  "message": "The agent's response message...",
+  "capabilities_used": ["chat", "research"],
+  "files": [],
+  "usage": {
+    "tokens_used": 1247
+  },
+  "meta": {
+    "duration_ms": 3400,
+    "project_id": "project-uuid",
+    "plan": "build"
+  }
+}
+```
+
+For session messages, the payload includes `"object": "session.message"` and an additional `session_id` field.
+
+## Headers
+
+Every webhook request includes these headers:
+
+| Header | Description |
+|:-------|:------------|
+| `Content-Type` | `application/json` |
+| `X-Stewrd-Signature` | HMAC signature: `t=<timestamp>,v1=<hex>` |
+| `X-Stewrd-Webhook-Id` | Unique delivery ID |
+| `X-Stewrd-Webhook-Timestamp` | Unix timestamp of the delivery |
+| `User-Agent` | `Stewrd-Webhooks/1.0` |
+
+## Signature Verification
+
+Always verify the `X-Stewrd-Signature` header to confirm the webhook came from Stewrd.
+
+The signature format is `t=<timestamp>,v1=<hmac>` where:
+- `timestamp` is the Unix timestamp when the webhook was sent
+- `hmac` is the HMAC-SHA256 of `<timestamp>.<payload>` using your signing secret
+
+<CodeGroup>
+```javascript Node.js
+const crypto = require('crypto');
+
+function verifyWebhook(payload, signature, secret) {
+  const [tPart, vPart] = signature.split(',');
+  const timestamp = tPart.split('=')[1];
+  const expectedSig = vPart.split('=')[1];
+
+  // Verify signature
+  const signedContent = `${timestamp}.${payload}`;
+  const hmac = crypto
+    .createHmac('sha256', secret)
+    .update(signedContent)
+    .digest('hex');
+
+  if (hmac !== expectedSig) {
+    throw new Error('Invalid webhook signature');
+  }
+
+  // Optional: reject old timestamps (prevent replay attacks)
+  const age = Math.floor(Date.now() / 1000) - parseInt(timestamp);
+  if (age > 300) {
+    throw new Error('Webhook timestamp too old');
+  }
+
+  return JSON.parse(payload);
+}
+
+// Express handler
+app.post('/webhooks/stewrd', (req, res) => {
+  const signature = req.headers['x-stewrd-signature'];
+  const payload = req.body; // raw body string
+
+  try {
+    const event = verifyWebhook(payload, signature, process.env.STEWRD_WEBHOOK_SECRET);
+    console.log('Agent completed:', event.id);
+    res.sendStatus(200);
+  } catch (err) {
+    res.sendStatus(401);
+  }
+});
+```
+
+```python Python
+import hmac
+import hashlib
+import json
+import time
+
+def verify_webhook(payload: str, signature: str, secret: str) -> dict:
+    t_part, v_part = signature.split(",")
+    timestamp = t_part.split("=")[1]
+    expected_sig = v_part.split("=")[1]
+
+    # Verify signature
+    signed_content = f"{timestamp}.{payload}"
+    computed = hmac.new(
+        secret.encode(), signed_content.encode(), hashlib.sha256
+    ).hexdigest()
+
+    if not hmac.compare_digest(computed, expected_sig):
+        raise ValueError("Invalid webhook signature")
+
+    # Optional: reject old timestamps
+    age = int(time.time()) - int(timestamp)
+    if age > 300:
+        raise ValueError("Webhook timestamp too old")
+
+    return json.loads(payload)
+
+# Flask handler
+@app.route("/webhooks/stewrd", methods=["POST"])
+def handle_webhook():
+    signature = request.headers.get("X-Stewrd-Signature")
+    payload = request.get_data(as_text=True)
+
+    try:
+        event = verify_webhook(payload, signature, os.environ["STEWRD_WEBHOOK_SECRET"])
+        print(f"Agent completed: {event['id']}")
+        return "", 200
+    except ValueError:
+        return "", 401
+```
+</CodeGroup>
+
+## Retry Behavior
+
+If your endpoint returns a non-2xx status code or is unreachable, Stewrd retries with exponential backoff:
+
+| Attempt | Delay |
+|:--------|:------|
+| 1st | Immediate |
+| 2nd | 30 seconds |
+| 3rd | 5 minutes |
+
+After 3 failed attempts, the delivery is marked as **failed**. Each delivery attempt has a 10-second timeout.
+
+## Delivery Log
+
+View delivery history in your project dashboard under the Webhooks section. Each delivery shows:
+
+- **Status**: `delivered`, `pending`, or `failed`
+- **HTTP response code** from your endpoint
+- **Attempt count**
+- **Timestamp**
+
+## Managing Webhooks
+
+### Regenerate Signing Secret
+
+If your signing secret is compromised, regenerate it from the dashboard. The old secret stops working immediately.
+
+### Disable / Enable
+
+Toggle webhooks on/off without removing the configuration. Disabled webhooks skip delivery entirely.
+
+### Test Delivery
+
+Send a test webhook with a sample payload to verify your endpoint is working. Test events use `"event": "webhook.test"`.

@@ -1,0 +1,198 @@
+---
+title: "Add AI Document Generation to Your App"
+description: "Generate PDFs and spreadsheets from a single API call. Send a prompt, get a download URL back."
+---
+
+## What you'll build
+
+An integration that generates documents — PDFs, spreadsheets, presentations — from natural language prompts. Your app sends a message describing what to create, and gets back a file URL ready for download.
+
+## Prerequisites
+
+- A Stewrd account ([sign up free](https://stewrd.dev/dashboard))
+- A project with the **documents** capability enabled (requires Build plan or higher)
+- Node.js 18+ (for the TypeScript examples)
+
+## 1. Create a project
+
+1. Go to your [dashboard](https://stewrd.dev/dashboard)
+2. Click **New Project**
+3. Give it a name (e.g. "Doc Generator")
+4. Enable the **documents** capability (and **research** if you want data-backed documents)
+5. Copy your API key
+
+## 2. Generate your first document
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.stewrd.dev/v1/agent \
+  -H "Authorization: Bearer sk-stw_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Create a PDF report titled \"Q1 2026 Marketing Summary\" with sections for Social Media, Email Campaigns, and Paid Ads. Use placeholder data.",
+    "capabilities": ["documents"]
+  }'
+```
+
+```typescript TypeScript (SDK)
+import { Stewrd } from '@stewrd/sdk'
+
+const stewrd = new Stewrd(process.env.STEWRD_API_KEY!)
+
+const result = await stewrd.agent.run({
+  message: 'Create a PDF report titled "Q1 2026 Marketing Summary" with sections for Social Media, Email Campaigns, and Paid Ads. Use placeholder data.',
+  capabilities: ['documents'],
+})
+
+console.log(result.message)          // "Here's your Q1 marketing report..."
+console.log(result.files[0].name)    // "q1-2026-marketing-summary.pdf"
+console.log(result.files[0].url)     // "https://files.stewrd.dev/abc123/q1-2026-marketing-summary.pdf"
+```
+</CodeGroup>
+
+## 3. Understand the file response
+
+When the agent generates a document, it appears in the `files` array:
+
+```json
+{
+  "id": "660e8400-e29b-41d4-a716-446655440000",
+  "object": "agent.response",
+  "message": "I've created your Q1 2026 Marketing Summary report as a PDF.",
+  "capabilities_used": ["documents"],
+  "files": [
+    {
+      "name": "q1-2026-marketing-summary.pdf",
+      "content": "",
+      "url": "https://files.stewrd.dev/abc123/q1-2026-marketing-summary.pdf"
+    }
+  ],
+  "usage": {
+    "requests_used": 2,
+    "requests_limit": 5000,
+    "tokens_used": 2100
+  },
+  "meta": {
+    "duration_ms": 6800,
+    "project_id": "proj_abc123",
+    "plan": "build"
+  }
+}
+```
+
+Key details:
+- **`files[].url`** — A signed URL to download the generated file
+- **`files[].name`** — The filename the agent chose based on your prompt
+- File URLs expire after **24 hours** (Free and Build tiers)
+
+<Info>
+  Binary files like PDFs return an empty `content` field with a download `url`. Text-based files (CSV, JSON, Markdown) include the content inline.
+</Info>
+
+## 4. Generate a spreadsheet
+
+The documents capability handles multiple file formats. Ask for a spreadsheet and you'll get one:
+
+```typescript
+const result = await stewrd.agent.run({
+  message: 'Create an Excel spreadsheet with a sheet called "Inventory" containing columns: SKU, Product Name, Category, Quantity, Unit Price. Add 20 rows of sample electronics inventory data.',
+  capabilities: ['documents'],
+})
+
+// result.files[0].name → "inventory.xlsx"
+// result.files[0].url  → "https://files.stewrd.dev/..."
+```
+
+## 5. Combine research + documents
+
+The real power comes from combining capabilities. Research real data, then generate a document from it:
+
+```typescript
+const result = await stewrd.agent.run({
+  message: 'Research the top 10 programming languages by popularity in 2026. Create a PDF report with a summary table comparing them by usage share, typical salary range, and primary use cases.',
+  capabilities: ['research', 'documents'],
+})
+
+// The agent researches first, then generates a PDF with real data
+console.log(result.files[0].url)
+```
+
+## 6. Integrate into a Next.js API route
+
+Here's a complete example exposing document generation as an API endpoint your frontend can call:
+
+```typescript
+// app/api/generate-report/route.ts
+import { Stewrd } from '@stewrd/sdk'
+import { NextRequest, NextResponse } from 'next/server'
+
+const stewrd = new Stewrd(process.env.STEWRD_API_KEY!)
+
+export async function POST(request: NextRequest) {
+  const { prompt, format } = await request.json()
+
+  if (!prompt || typeof prompt !== 'string') {
+    return NextResponse.json(
+      { error: 'Missing "prompt" in request body' },
+      { status: 400 }
+    )
+  }
+
+  const formatHint = format === 'xlsx' ? 'as an Excel spreadsheet' : 'as a PDF'
+
+  const result = await stewrd.agent.run({
+    message: `${prompt}. Generate the output ${formatHint}.`,
+    capabilities: ['documents'],
+  })
+
+  const file = result.files[0]
+
+  if (!file?.url) {
+    return NextResponse.json(
+      { error: 'No file was generated' },
+      { status: 500 }
+    )
+  }
+
+  return NextResponse.json({
+    message: result.message,
+    file: {
+      name: file.name,
+      url: file.url,
+    },
+  })
+}
+```
+
+Then call it from your frontend:
+
+```typescript
+const res = await fetch('/api/generate-report', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    prompt: 'Create a monthly expense report for January 2026',
+    format: 'pdf',
+  }),
+})
+
+const { file } = await res.json()
+window.open(file.url) // Opens the generated PDF
+```
+
+## What's next?
+
+<CardGroup cols={2}>
+  <Card title="Build a Research Assistant" icon="magnifying-glass" href="/tutorials/research-assistant">
+    Combine research with document generation for data-backed reports
+  </Card>
+  <Card title="Files Guide" icon="file" href="/files">
+    Send files to the agent and receive generated files back
+  </Card>
+  <Card title="Usage & Limits" icon="gauge" href="/usage-and-limits">
+    Understand request quotas and file storage limits
+  </Card>
+  <Card title="SDK Reference" icon="book" href="/sdks">
+    Full TypeScript SDK documentation
+  </Card>
+</CardGroup>

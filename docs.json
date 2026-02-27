@@ -52,6 +52,13 @@
               "errors",
               "sdks"
             ]
+          },
+          {
+            "group": "Tutorials",
+            "pages": [
+              "tutorials/research-assistant",
+              "tutorials/document-generation"
+            ]
           }
         ]
       },

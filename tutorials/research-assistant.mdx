@@ -1,0 +1,199 @@
+---
+title: "Build a Research Assistant in 10 Minutes"
+description: "Create a research assistant that finds information, synthesizes it, and returns structured results — using one API call."
+---
+
+## What you'll build
+
+A research assistant that takes a topic, searches the web, and returns a synthesized summary with sources. You'll go from zero to working prototype in under 10 minutes.
+
+## Prerequisites
+
+- A Stewrd account ([sign up free](https://stewrd.dev/dashboard))
+- A project with the **research** capability enabled (requires Build plan or higher)
+- Node.js 18+ (for the TypeScript examples)
+
+## 1. Create a project
+
+1. Go to your [dashboard](https://stewrd.dev/dashboard)
+2. Click **New Project**
+3. Give it a name (e.g. "Research Assistant")
+4. Enable the **research** and **chat** capabilities
+5. Copy your API key — it looks like `sk-stw_...`
+
+<Warning>
+  Keep your API key secret. Never commit it to source control or expose it in client-side code.
+</Warning>
+
+## 2. Make your first research request
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.stewrd.dev/v1/agent \
+  -H "Authorization: Bearer sk-stw_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Research the current state of AI code generation tools. Compare Copilot, Cursor, and Claude Code. Include pricing and key features.",
+    "capabilities": ["research", "chat"]
+  }'
+```
+
+```typescript TypeScript (fetch)
+const response = await fetch('https://api.stewrd.dev/v1/agent', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.STEWRD_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    message: 'Research the current state of AI code generation tools. Compare Copilot, Cursor, and Claude Code. Include pricing and key features.',
+    capabilities: ['research', 'chat'],
+  }),
+})
+
+const data = await response.json()
+console.log(data.message)
+```
+
+```typescript TypeScript (SDK)
+import { Stewrd } from '@stewrd/sdk'
+
+const stewrd = new Stewrd(process.env.STEWRD_API_KEY!)
+
+const result = await stewrd.agent.run({
+  message: 'Research the current state of AI code generation tools. Compare Copilot, Cursor, and Claude Code. Include pricing and key features.',
+  capabilities: ['research', 'chat'],
+})
+
+console.log(result.message)
+```
+</CodeGroup>
+
+## 3. Understand the response
+
+The agent returns a structured JSON response:
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "object": "agent.response",
+  "message": "Here's a comparison of the leading AI code generation tools...\n\n## GitHub Copilot\n- **Pricing:** $10/mo individual...\n\n## Cursor\n- **Pricing:** $20/mo pro...\n\n## Claude Code\n- **Pricing:** Usage-based...",
+  "capabilities_used": ["research", "chat"],
+  "files": [],
+  "usage": {
+    "requests_used": 1,
+    "requests_limit": 5000,
+    "tokens_used": 1847
+  },
+  "meta": {
+    "duration_ms": 8200,
+    "project_id": "proj_abc123",
+    "plan": "build"
+  }
+}
+```
+
+Key fields:
+- **`message`** — The synthesized research output
+- **`capabilities_used`** — Confirms which capabilities the agent actually used
+- **`usage`** — Your current request count against your monthly limit
+
+## 4. Build a reusable function
+
+Wrap the API call in a function you can reuse across your app:
+
+```typescript
+import { Stewrd } from '@stewrd/sdk'
+
+const stewrd = new Stewrd(process.env.STEWRD_API_KEY!)
+
+async function research(topic: string): Promise<string> {
+  const result = await stewrd.agent.run({
+    message: `Research the following topic and provide a detailed, well-structured summary with key findings: ${topic}`,
+    capabilities: ['research', 'chat'],
+  })
+
+  return result.message
+}
+
+// Usage
+const summary = await research('latest trends in serverless computing 2026')
+console.log(summary)
+```
+
+## 5. Add streaming for real-time output
+
+For a better user experience, stream the response so users see results as they arrive:
+
+```typescript
+import { Stewrd } from '@stewrd/sdk'
+
+const stewrd = new Stewrd(process.env.STEWRD_API_KEY!)
+
+const stream = await stewrd.agent.stream({
+  message: 'Research the top 5 open-source databases by popularity in 2026',
+  capabilities: ['research', 'chat'],
+})
+
+for await (const event of stream) {
+  if (event.type === 'token') {
+    process.stdout.write(event.content)
+  }
+  if (event.type === 'tool_start') {
+    console.log(`\n[Using ${event.tool}...]`)
+  }
+  if (event.type === 'done') {
+    console.log(`\n\nCompleted in ${event.duration_ms}ms`)
+  }
+}
+```
+
+## 6. Integrate into an API route
+
+Here's how to expose your research assistant as a Next.js API route:
+
+```typescript
+// app/api/research/route.ts
+import { Stewrd } from '@stewrd/sdk'
+import { NextRequest, NextResponse } from 'next/server'
+
+const stewrd = new Stewrd(process.env.STEWRD_API_KEY!)
+
+export async function POST(request: NextRequest) {
+  const { topic } = await request.json()
+
+  if (!topic || typeof topic !== 'string') {
+    return NextResponse.json(
+      { error: 'Missing "topic" in request body' },
+      { status: 400 }
+    )
+  }
+
+  const result = await stewrd.agent.run({
+    message: `Research the following topic and provide a detailed summary: ${topic}`,
+    capabilities: ['research', 'chat'],
+  })
+
+  return NextResponse.json({
+    summary: result.message,
+    usage: result.usage,
+  })
+}
+```
+
+## What's next?
+
+<CardGroup cols={2}>
+  <Card title="Add Document Generation" icon="file-pdf" href="/tutorials/document-generation">
+    Generate PDFs and spreadsheets from your research results
+  </Card>
+  <Card title="Streaming Guide" icon="wave-pulse" href="/streaming">
+    Build real-time UIs with Server-Sent Events
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/errors">
+    Handle rate limits, timeouts, and validation errors
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/agent">
+    Full endpoint documentation and playground
+  </Card>
+</CardGroup>

@@ -11,9 +11,13 @@
     "default": "dark"
   },
   "colors": {
-    "primary": "#6366f1",
-    "light": "#818cf8",
-    "dark": "#4f46e5"
+    "primary": "#C4A265",
+    "light": "#D4B87A",
+    "dark": "#8A6F44",
+    "background": {
+      "dark": "#0B1017",
+      "light": "#FFFFFF"
+    }
   },
   "topbarLinks": [
     {

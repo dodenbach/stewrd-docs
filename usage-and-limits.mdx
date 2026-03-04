@@ -5,12 +5,15 @@ description: "Plan limits, rate limits, and usage tracking for the Stewrd API."
 
 ## Plan Limits
 
-| Plan | Price | Requests/mo | Overage |
-|:-----|:------|:------------|:--------|
-| Free | $0 | 100 | Hard cap — upgrade to continue |
-| Build | $29/mo | 5,000 | $0.005/request |
-| Scale | $99/mo | 50,000 | $0.005/request |
-| Custom | Custom | Unlimited | Volume discounts |
+All plans have hard caps. Once you reach your limit, requests are rejected until the next billing period.
+
+| Plan | Price | Requests/mo | Projects |
+|:-----|:------|:------------|:---------|
+| Free | $0 | 500 | 2 |
+| Dev | $5/mo | 5,000 | 5 |
+| Pro | $15/mo | 25,000 | 10 |
+| Scale | $49/mo | 100,000 | 50 |
+| Custom | Custom | Unlimited | Unlimited |
 
 <Card title="Upgrade your plan" icon="arrow-up-right" href="https://stewrd.dev/pricing">
   View detailed pricing and upgrade from your dashboard.
@@ -62,5 +65,5 @@ Every response includes rate limit headers:
 | `X-RateLimit-Reset` | Unix timestamp when the limit resets |
 
 <Note>
-  **Free tier:** Requests stop at the hard cap (100/mo). Paid plans allow overage at $0.005/request — your app never breaks on traffic spikes.
+  All plans have hard caps. When you hit your limit, requests return 429 until the next billing period. Upgrade your plan to increase your quota.
 </Note>

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Stewrd API",
-    "description": "A managed API that actually does things. Send a message, get finished work back.",
+    "description": "Managed AI agent infrastructure. Bring your own LLM key, send a message, get finished work back.",
     "version": "1.0.0",
     "contact": {
       "name": "Stewrd Support",
@@ -336,7 +336,7 @@
                     "value": {
                       "error": {
                         "code": "plan_restricted",
-                        "message": "Capabilities [research] require the Build plan or higher."
+                        "message": "Capabilities [research] require the Dev plan or higher."
                       }
                     }
                   }
@@ -364,7 +364,7 @@
                     "value": {
                       "error": {
                         "code": "quota_exceeded",
-                        "message": "Monthly request limit reached (100). Upgrade your plan at https://stewrd.dev/pricing"
+                        "message": "Monthly request limit reached (500). Upgrade your plan at https://stewrd.dev/pricing"
                       }
                     }
                   }

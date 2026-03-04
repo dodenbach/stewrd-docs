@@ -1,0 +1,72 @@
+---
+title: "Bring Your Own Key (BYOK)"
+description: "Use your own LLM API key with Stewrd. You control model choice and costs."
+---
+
+## What is BYOK?
+
+Stewrd is managed AI agent infrastructure — orchestration, browser automation, file storage, and sessions. With BYOK, you bring your own LLM API key so you control which model runs and how much inference costs.
+
+Stewrd charges only for infrastructure. Your LLM costs go directly to your provider.
+
+## Supported Providers
+
+| Provider | Status | Base URL |
+|:---------|:-------|:---------|
+| [OpenRouter](https://openrouter.ai) | Supported | `https://openrouter.ai/api/v1` |
+
+OpenRouter gives you access to hundreds of models (GPT-4o, Claude, Llama, Mixtral, and more) through a single API key.
+
+## How to Configure
+
+### 1. Get a provider API key
+
+Sign up at [openrouter.ai](https://openrouter.ai) and create an API key.
+
+### 2. Configure in your dashboard
+
+Go to your [project settings](https://stewrd.dev/dashboard), select your project, and click **Edit** under LLM Configuration:
+
+- **Provider**: Select OpenRouter
+- **API Key**: Paste your provider API key
+- **Model**: Choose a model (e.g., `moonshotai/kimi-k2.5`, `openai/gpt-4o`, `anthropic/claude-sonnet-4`)
+
+### 3. Send requests as normal
+
+Your API requests work exactly the same — Stewrd uses your key to call the LLM provider on your behalf.
+
+```bash
+curl https://api.stewrd.dev/v1/agent \
+  -H "Authorization: Bearer sk-stw_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Summarize the latest AI news"}'
+```
+
+## Model Selection
+
+You can use any model available on your provider. Some popular choices:
+
+| Model | Provider | Best For |
+|:------|:---------|:---------|
+| `moonshotai/kimi-k2.5` | OpenRouter | General purpose, good balance |
+| `openai/gpt-4o` | OpenRouter | High quality reasoning |
+| `anthropic/claude-sonnet-4` | OpenRouter | Nuanced analysis, coding |
+| `meta-llama/llama-3.1-70b-instruct` | OpenRouter | Cost-effective, fast |
+
+## Security
+
+Your provider API key is protected with multiple layers:
+
+- **Encrypted at rest** using AES-256-GCM
+- **Never logged** in any application or access logs
+- **Never returned** in any API response (only a `has_provider_key: true/false` flag)
+- **Transmitted securely** over HTTPS between Stewrd services
+- **Scoped per project** — each project can have its own key and model
+
+<Warning>
+  If your provider key is compromised, rotate it in your provider's dashboard and update it in your Stewrd project settings.
+</Warning>
+
+## Without BYOK
+
+If you don't configure a provider key, Stewrd falls back to its default model configuration. This may have limited availability — we recommend configuring your own key for production use.

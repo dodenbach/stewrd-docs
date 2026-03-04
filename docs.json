@@ -39,7 +39,8 @@
             "pages": [
               "introduction",
               "quickstart",
-              "authentication"
+              "authentication",
+              "byok"
             ]
           },
           {

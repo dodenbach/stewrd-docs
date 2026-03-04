@@ -11,7 +11,20 @@ Sign up at [stewrd.dev/dashboard](https://stewrd.dev/dashboard), create a projec
   Your API key looks like `sk-stw_...`. Keep it secret — treat it like a password.
 </Info>
 
-## 2. Make your first request
+## 2. Configure your LLM key (BYOK)
+
+In your project settings, add your LLM provider API key:
+
+1. Get an API key from [OpenRouter](https://openrouter.ai)
+2. Go to your project in the [dashboard](https://stewrd.dev/dashboard)
+3. Click **Edit** under LLM Configuration
+4. Paste your OpenRouter API key and choose a model
+
+<Info>
+  Your provider key is encrypted at rest and never logged. See the [BYOK guide](/byok) for details.
+</Info>
+
+## 3. Make your first request
 
 <CodeGroup>
 ```bash cURL
@@ -37,7 +50,7 @@ const data = await response.json()
 ```
 </CodeGroup>
 
-## 3. Response shape
+## 4. Response shape
 
 Every successful response includes the agent's message, any generated files, and your current usage:
 
@@ -50,7 +63,7 @@ Every successful response includes the agent's message, any generated files, and
   "files": [],
   "usage": {
     "requests_used": 1,
-    "requests_limit": 100,
+    "requests_limit": 500,
     "tokens_used": 42
   },
   "meta": {

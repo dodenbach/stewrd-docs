@@ -13,23 +13,27 @@ Stewrd charges only for infrastructure. Your LLM costs go directly to your provi
 
 | Provider | Status | Base URL |
 |:---------|:-------|:---------|
+| [OpenAI](https://platform.openai.com) | Supported | `https://api.openai.com/v1` |
 | [OpenRouter](https://openrouter.ai) | Supported | `https://openrouter.ai/api/v1` |
 
-OpenRouter gives you access to hundreds of models (GPT-4o, Claude, Llama, Mixtral, and more) through a single API key.
+**OpenAI** — Use your OpenAI API key directly for access to GPT-4o, GPT-4o mini, o1, and other OpenAI models.
+
+**OpenRouter** — Access hundreds of models (GPT-4o, Claude, Llama, Mixtral, and more) through a single API key.
 
 ## How to Configure
 
 ### 1. Get a provider API key
 
-Sign up at [openrouter.ai](https://openrouter.ai) and create an API key.
+- **OpenAI:** Sign up at [platform.openai.com](https://platform.openai.com) and create an API key under API Keys.
+- **OpenRouter:** Sign up at [openrouter.ai](https://openrouter.ai) and create an API key.
 
 ### 2. Configure in your dashboard
 
 Go to your [project settings](https://stewrd.dev/dashboard), select your project, and click **Edit** under LLM Configuration:
 
-- **Provider**: Select OpenRouter
+- **Provider**: Select OpenAI or OpenRouter
 - **API Key**: Paste your provider API key
-- **Model**: Choose a model (e.g., `moonshotai/kimi-k2.5`, `openai/gpt-4o`, `anthropic/claude-sonnet-4`)
+- **Model**: Choose a model (see table below)
 
 ### 3. Send requests as normal
 
@@ -48,8 +52,11 @@ You can use any model available on your provider. Some popular choices:
 
 | Model | Provider | Best For |
 |:------|:---------|:---------|
+| `gpt-4o` | OpenAI | High quality reasoning |
+| `gpt-4o-mini` | OpenAI | Fast, cost-effective |
+| `o1` | OpenAI | Complex reasoning tasks |
 | `moonshotai/kimi-k2.5` | OpenRouter | General purpose, good balance |
-| `openai/gpt-4o` | OpenRouter | High quality reasoning |
+| `openai/gpt-4o` | OpenRouter | High quality reasoning (via OpenRouter) |
 | `anthropic/claude-sonnet-4` | OpenRouter | Nuanced analysis, coding |
 | `meta-llama/llama-3.1-70b-instruct` | OpenRouter | Cost-effective, fast |
 

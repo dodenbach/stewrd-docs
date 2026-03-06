@@ -41,6 +41,58 @@ for await (const event of stream) {
 }
 ```
 
+### Custom Tools (Function Calling)
+
+Use `runWithTools` to let the agent call your functions — the SDK handles the loop automatically:
+
+```typescript
+const result = await stewrd.agent.runWithTools(
+  {
+    message: 'Check order #12345 and email the customer a summary',
+    tools: [
+      {
+        name: 'get_order',
+        description: 'Look up an order by ID',
+        parameters: {
+          type: 'object',
+          properties: { order_id: { type: 'string' } },
+          required: ['order_id'],
+        },
+      },
+      {
+        name: 'send_email',
+        description: 'Send an email to a customer',
+        parameters: {
+          type: 'object',
+          properties: {
+            to: { type: 'string' },
+            subject: { type: 'string' },
+            body: { type: 'string' },
+          },
+          required: ['to', 'subject', 'body'],
+        },
+      },
+    ],
+  },
+  async (toolCall) => {
+    // Execute the tool in your system and return the result as a string
+    if (toolCall.name === 'get_order') {
+      const order = await db.orders.findById(toolCall.arguments.order_id as string)
+      return JSON.stringify(order)
+    }
+    if (toolCall.name === 'send_email') {
+      await emailService.send(toolCall.arguments)
+      return JSON.stringify({ sent: true })
+    }
+    return JSON.stringify({ error: 'Unknown tool' })
+  }
+)
+
+console.log(result.message)
+```
+
+For more control, use `submitToolOutputs` directly to handle the loop yourself. See the [Custom Tools guide](/tools) for details.
+
 ### Error Handling
 
 ```typescript

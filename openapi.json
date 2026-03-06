@@ -187,6 +187,110 @@
         }
       }
     },
+    "/v1/agent/{id}/tool-outputs": {
+      "post": {
+        "operationId": "submitToolOutputs",
+        "summary": "Submit tool outputs",
+        "description": "Submit tool call results and continue agent execution. No credit charge on continuations.",
+        "tags": ["Agent"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "The request ID from the initial `POST /v1/agent` response."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolOutputRequest"
+              },
+              "example": {
+                "tool_outputs": [
+                  {
+                    "tool_call_id": "call_xyz",
+                    "output": "{\"order_id\":\"12345\",\"status\":\"shipped\"}"
+                  }
+                ],
+                "_compute_instance": "e784079b"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Continuation response — either completed or requires more tool outputs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — invalid tool outputs",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "invalid_tool_outputs": {
+                    "value": {
+                      "error": {
+                        "code": "invalid_tool_outputs",
+                        "message": "tool_outputs[0]: \"tool_call_id\" is required and must be a string."
+                      }
+                    }
+                  },
+                  "tool_output_too_large": {
+                    "value": {
+                      "error": {
+                        "code": "tool_output_too_large",
+                        "message": "tool_outputs[0]: Output exceeds maximum size of 100KB."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Context expired",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": {
+                  "error": {
+                    "code": "context_expired",
+                    "message": "The execution context has expired. Start a new request."
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Compute service error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agent": {
       "post": {
         "operationId": "runAgent",
@@ -231,6 +335,36 @@
                   "value": {
                     "message": "Write a detailed analysis of renewable energy trends",
                     "stream": true
+                  }
+                },
+                "with-tools": {
+                  "summary": "Custom tools (function calling)",
+                  "value": {
+                    "message": "Check order #12345 and email the customer a summary",
+                    "tools": [
+                      {
+                        "name": "get_order",
+                        "description": "Look up an order by ID",
+                        "parameters": {
+                          "type": "object",
+                          "properties": { "order_id": { "type": "string" } },
+                          "required": ["order_id"]
+                        }
+                      },
+                      {
+                        "name": "send_email",
+                        "description": "Send an email to a customer",
+                        "parameters": {
+                          "type": "object",
+                          "properties": {
+                            "to": { "type": "string" },
+                            "subject": { "type": "string" },
+                            "body": { "type": "string" }
+                          },
+                          "required": ["to", "subject", "body"]
+                        }
+                      }
+                    ]
                   }
                 }
               }
@@ -444,7 +578,81 @@
           "stream": {
             "type": "boolean",
             "default": false,
-            "description": "Set to `true` to receive a Server-Sent Events stream instead of a JSON response."
+            "description": "Set to `true` to receive a Server-Sent Events stream instead of a JSON response. Not supported when `tools` is provided."
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolDefinition"
+            },
+            "description": "Custom tool definitions for function calling. When provided, only the `chat` capability is used and streaming is disabled. Max 20 tools per request.",
+            "maxItems": 20
+          }
+        }
+      },
+      "ToolDefinition": {
+        "type": "object",
+        "required": ["name", "description", "parameters"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_]+$",
+            "maxLength": 64,
+            "description": "Tool name — alphanumeric and underscores only."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1024,
+            "description": "Description of what the tool does."
+          },
+          "parameters": {
+            "type": "object",
+            "description": "JSON Schema for the tool's parameters. Must have `type: \"object\"`."
+          }
+        }
+      },
+      "ToolCall": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for this tool call."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the tool to invoke."
+          },
+          "arguments": {
+            "type": "object",
+            "description": "Parsed arguments for the tool."
+          }
+        }
+      },
+      "ToolOutputRequest": {
+        "type": "object",
+        "required": ["tool_outputs"],
+        "properties": {
+          "tool_outputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["tool_call_id", "output"],
+              "properties": {
+                "tool_call_id": {
+                  "type": "string",
+                  "description": "The `id` from the tool call."
+                },
+                "output": {
+                  "type": "string",
+                  "maxLength": 102400,
+                  "description": "The result of executing the tool (max 100KB)."
+                }
+              }
+            }
+          },
+          "_compute_instance": {
+            "type": "string",
+            "description": "Instance ID from the previous response for machine affinity routing."
           }
         }
       },
@@ -477,9 +685,21 @@
             "enum": ["agent.response"],
             "description": "Object type, always `agent.response`."
           },
+          "status": {
+            "type": "string",
+            "enum": ["completed", "requires_tool_outputs"],
+            "description": "Response status. `completed` when the agent has finished, `requires_tool_outputs` when the agent needs custom tool results."
+          },
           "message": {
             "type": "string",
-            "description": "The agent's response message."
+            "description": "The agent's response message. Present when `status` is `completed`."
+          },
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            },
+            "description": "Tool calls the agent wants to make. Present when `status` is `requires_tool_outputs`."
           },
           "capabilities_used": {
             "type": "array",
@@ -498,6 +718,10 @@
           },
           "meta": {
             "$ref": "#/components/schemas/Meta"
+          },
+          "_compute_instance": {
+            "type": "string",
+            "description": "Compute instance ID — pass back with tool output submissions for machine affinity routing."
           }
         }
       },
@@ -522,13 +746,13 @@
       "Usage": {
         "type": "object",
         "properties": {
-          "requests_used": {
+          "credits_this_request": {
             "type": "integer",
-            "description": "Requests consumed this billing period."
+            "description": "Credits consumed for this request. 0 on tool output continuations."
           },
-          "requests_limit": {
+          "credits_remaining": {
             "type": "integer",
-            "description": "Your plan's monthly request quota."
+            "description": "Credits remaining in this billing period."
           },
           "tokens_used": {
             "type": "integer",

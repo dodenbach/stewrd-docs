@@ -43,6 +43,8 @@ When an agent task completes, Stewrd sends a POST request to your webhook URL:
 
 For session messages, the payload includes `"object": "session.message"` and an additional `session_id` field.
 
+For requests with [custom tools](/tools), the webhook fires once the agent reaches `status: "completed"` — after all tool call rounds are finished. Intermediate `requires_tool_outputs` responses do not trigger webhooks.
+
 ## Headers
 
 Every webhook request includes these headers:

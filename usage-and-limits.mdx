@@ -1,21 +1,37 @@
 ---
 title: "Usage & Limits"
-description: "Plan limits, rate limits, and usage tracking for the Stewrd API."
+description: "Credit-based usage, plan limits, and rate limiting for the Stewrd API."
 ---
+
+## Credit-Based Usage
+
+Each API request costs **credits** based on the capabilities used. This ensures you pay proportionally to the compute resources consumed.
+
+| Capability | Credits | Description |
+|:-----------|:--------|:------------|
+| Chat | 1 | Conversational AI |
+| Data | 1 | Structured data processing |
+| Files | 2 | File upload/download via signed URLs |
+| Research | 3 | Web search + synthesis |
+| Code | 3 | Sandboxed code execution |
+| Documents | 5 | PDF/report generation |
+
+A request using multiple capabilities costs the **sum** of their weights. For example, a request with `capabilities: ["research", "documents"]` costs 8 credits.
 
 ## Plan Limits
 
-All plans have hard caps. Once you reach your limit, requests are rejected until the next billing period.
+| Plan | Price | Credits/mo | Overage | Projects |
+|:-----|:------|:-----------|:--------|:---------|
+| Free | $0 | 50 | Hard cutoff | 2 |
+| Dev | $12/mo | 500 | $0.02/credit | 5 |
+| Pro | $39/mo | 2,500 | $0.015/credit | 10 |
+| Scale | $99/mo | 10,000 | $0.008/credit | 50 |
 
-| Plan | Price | Requests/mo | Projects |
-|:-----|:------|:------------|:---------|
-| Free | $0 | 500 | 2 |
-| Dev | $5/mo | 5,000 | 5 |
-| Pro | $15/mo | 25,000 | 10 |
-| Scale | $49/mo | 100,000 | 50 |
-| Custom | Custom | Unlimited | Unlimited |
+**Free plan:** Requests are rejected with a 429 status code when you exhaust your 50 credits.
 
-<Card title="Upgrade your plan" icon="arrow-up-right" href="https://stewrd.dev/pricing">
+**Paid plans:** Requests continue beyond the included credits. Overages are billed at your plan's per-credit rate at the end of the billing period.
+
+<Card title="Upgrade your plan" icon="arrow-up-right" href="https://www.stewrd.dev/pricing">
   View detailed pricing and upgrade from your dashboard.
 </Card>
 
@@ -41,8 +57,10 @@ Every response includes current usage in the `usage` object:
 ```json
 {
   "usage": {
-    "requests_used": 42,
-    "requests_limit": 5000,
+    "credits_used": 42,
+    "credits_limit": 500,
+    "credits_this_request": 3,
+    "overage": false,
     "tokens_used": 847
   }
 }
@@ -50,9 +68,11 @@ Every response includes current usage in the `usage` object:
 
 | Field | Description |
 |:------|:------------|
-| `requests_used` | Requests consumed this billing period |
-| `requests_limit` | Your plan's monthly quota |
-| `tokens_used` | Tokens consumed for this specific request |
+| `credits_used` | Credits consumed this billing period |
+| `credits_limit` | Your plan's included monthly credits |
+| `credits_this_request` | Credits consumed for this specific request |
+| `overage` | Whether you've exceeded your included credits |
+| `tokens_used` | LLM tokens consumed for this specific request |
 
 ## Rate Limit Headers
 
@@ -60,10 +80,10 @@ Every response includes rate limit headers:
 
 | Header | Description |
 |:-------|:------------|
-| `X-RateLimit-Limit` | Monthly request limit for your plan |
-| `X-RateLimit-Remaining` | Requests remaining this billing period |
+| `X-RateLimit-Limit` | Monthly credit limit for your plan |
+| `X-RateLimit-Remaining` | Credits remaining this billing period |
 | `X-RateLimit-Reset` | Unix timestamp when the limit resets |
 
 <Note>
-  All plans have hard caps. When you hit your limit, requests return 429 until the next billing period. Upgrade your plan to increase your quota.
+  Free plan has a hard cap at 50 credits. Paid plans allow overages — requests are never blocked, and overage charges are billed at the end of each billing period.
 </Note>

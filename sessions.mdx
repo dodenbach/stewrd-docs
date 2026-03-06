@@ -7,7 +7,7 @@ description: "Persistent multi-turn conversations with context that carries acro
 
 Sessions let your agent remember prior conversation context. Instead of each request being independent, messages within a session build on each other — the agent sees the full conversation history and can reference earlier messages.
 
-Sessions are available on the **Scale plan** and above.
+Sessions are available to accounts with purchased credits.
 
 ## How It Works
 
@@ -113,7 +113,7 @@ The agent references the research from the first message without you needing to 
 | Idle timeout | 30 minutes of inactivity |
 | Max active sessions | 10 per project |
 | Max history | 50 messages per session |
-| Plan requirement | Scale or Custom |
+| Plan requirement | Purchased credits (any pack) |
 
 - Sessions auto-expire after 30 minutes with no messages
 - Expired sessions return `410 Gone`
@@ -137,7 +137,7 @@ Session messages accept the same body as the agent endpoint:
 
 ## Plan Requirements
 
-Sessions are only available on the **Scale plan** ($99/month) and above. Attempting to create a session with a Free, Dev, or Pro plan API key returns:
+Sessions require purchasing credits (any credit pack). Free accounts cannot create sessions. Attempting to create a session with a free account returns:
 
 ```json
 {
@@ -148,4 +148,4 @@ Sessions are only available on the **Scale plan** ($99/month) and above. Attempt
 }
 ```
 
-Upgrade at [stewrd.dev/pricing](https://stewrd.dev/pricing).
+Purchase credits at [stewrd.dev/pricing](https://stewrd.dev/pricing).

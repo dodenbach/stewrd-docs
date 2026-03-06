@@ -47,6 +47,7 @@
             "group": "Guides",
             "pages": [
               "capabilities",
+              "tools",
               "files",
               "streaming",
               "sessions",
@@ -69,6 +70,7 @@
         "tab": "API Reference",
         "pages": [
           "api-reference/agent",
+          "api-reference/tool-outputs",
           "api-reference/sessions",
           "api-reference/session-messages"
         ]

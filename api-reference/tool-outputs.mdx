@@ -1,0 +1,56 @@
+---
+title: "Submit Tool Outputs"
+description: "POST /v1/agent/{id}/tool-outputs — Submit tool call results and continue execution."
+---
+
+## Endpoint
+
+```
+POST https://api.stewrd.dev/v1/agent/{id}/tool-outputs
+```
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|:----------|:-----|:------------|
+| `id` | string | The request ID from the initial `POST /v1/agent` response |
+
+## Request Body
+
+| Field | Type | Required | Description |
+|:------|:-----|:---------|:------------|
+| `tool_outputs` | array | Yes | Array of tool output objects |
+| `tool_outputs[].tool_call_id` | string | Yes | The `id` from the tool call |
+| `tool_outputs[].output` | string | Yes | The result of executing the tool (max 100KB) |
+| `_compute_instance` | string | Yes | Instance ID from previous response for routing |
+
+## Response
+
+Returns the same shape as `POST /v1/agent`:
+- `status: "requires_tool_outputs"` if more tool calls are needed
+- `status: "completed"` if the agent has finished
+
+## Example
+
+```bash
+curl -X POST https://api.stewrd.dev/v1/agent/req-abc-123/tool-outputs \
+  -H "Authorization: Bearer sk-stw_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool_outputs": [
+      {
+        "tool_call_id": "call_xyz",
+        "output": "{\"order_id\": \"12345\", \"status\": \"shipped\"}"
+      }
+    ],
+    "_compute_instance": "e784079b"
+  }'
+```
+
+## Notes
+
+- **No credit charge** — tool output submissions are free. Credits are only charged on the initial request.
+- **5-minute TTL** — submit outputs within 5 minutes or the context expires.
+- **Machine affinity** — always pass `_compute_instance` to route to the correct server.
+
+See the [Custom Tools guide](/tools) for a complete walkthrough.

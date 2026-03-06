@@ -35,6 +35,10 @@ All errors return a consistent JSON shape:
 | `plan_restricted` | 403 | Capability requires a paid plan | [Upgrade your plan](https://stewrd.dev/pricing) to access this capability |
 | `quota_exceeded` | 429 | Monthly request quota exceeded | Upgrade your plan or wait for the next billing cycle |
 | `rate_limited` | 429 | Too many requests (60/min limit) | Back off and retry after a short delay |
+| `invalid_tools` | 400 | Tool definitions are malformed or exceed limits | Check tool name format, description, and parameter schema. See [Custom Tools](/tools) |
+| `invalid_tool_outputs` | 400 | Tool outputs array is malformed | Each output needs `tool_call_id` (string) and `output` (string) |
+| `context_expired` | 404 | Execution context expired or not found | Submit tool outputs within 5 minutes. Start a new request if expired |
+| `tool_output_too_large` | 400 | A single tool output exceeds the 100KB limit | Reduce the output size or summarize the data |
 | `compute_error` | 502 | The compute service returned an error | Retry the request; if persistent, contact support |
 | `compute_unavailable` | 502 | Failed to reach the compute service | Retry the request; check [status.openstatus.dev](https://status.openstatus.dev) |
 | `service_unavailable` | 503 | Compute service is not configured | Check [status.openstatus.dev](https://status.openstatus.dev) for outages |
